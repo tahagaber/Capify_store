@@ -270,14 +270,19 @@
             const isMobile = window.innerWidth < 1024;
             
             if (isMobile) {
-                sidebar.classList.toggle('-translate-x-full');
-                overlay.classList.toggle('hidden');
-                setTimeout(() => overlay.classList.toggle('opacity-100'), 10);
+                const isOpening = sidebar.classList.contains('-translate-x-full');
+                if (isOpening) {
+                    overlay.classList.remove('hidden');
+                    sidebar.classList.remove('-translate-x-full');
+                    setTimeout(() => overlay.classList.replace('opacity-0', 'opacity-100'), 10);
+                } else {
+                    overlay.classList.replace('opacity-100', 'opacity-0');
+                    sidebar.classList.add('-translate-x-full');
+                    setTimeout(() => overlay.classList.add('hidden'), 300);
+                }
             } else {
-                // Desktop Toggle: Switch between visible and hidden
                 sidebar.classList.toggle('lg:translate-x-0');
                 sidebar.classList.toggle('lg:-translate-x-full');
-                // Adjust content margin
                 content.classList.toggle('lg:pl-72');
                 content.classList.toggle('lg:pl-0');
             }

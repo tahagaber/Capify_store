@@ -86,6 +86,51 @@ document.addEventListener('DOMContentLoaded', () => {
             border: 1px solid rgba(59, 130, 246, 0.1);
             font-family: 'JetBrains Mono', 'Inter', monospace;
         }
+
+        /* Responsive Table Adjustments */
+        @media (max-width: 768px) {
+            .hide-on-mobile { display: none !important; }
+            .mobile-stack { flex-direction: column !important; align-items: flex-end !important; }
+            .product-container { max-width: 100% !important; }
+            
+            /* Responsive Grid for Recent Orders on Dashboard */
+            #recentOrdersBody tr, #fullOrdersTableBody tr {
+                display: flex;
+                flex-direction: column;
+                padding: 1.5rem;
+                gap: 12px;
+                background: rgba(30, 41, 59, 0.4);
+                margin-bottom: 1rem;
+                border-radius: 1.5rem;
+                border: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            #recentOrdersBody td, #fullOrdersTableBody td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0 !important;
+                border: none !important;
+                width: 100% !important;
+                text-align: right !important;
+            }
+            #recentOrdersBody td::before, #fullOrdersTableBody td::before {
+                content: attr(data-label);
+                font-size: 10px;
+                font-weight: 800;
+                color: #64748b;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+            #recentOrdersBody td:last-child, #fullOrdersTableBody td:last-child {
+                justify-content: flex-start;
+                margin-top: 8px;
+                padding-top: 12px !important;
+                border-top: 1px dashed rgba(255,255,255,0.1) !important;
+            }
+            
+            /* Hide the actual head on mobile */
+            thead.hide-on-mobile { display: none; }
+        }
          /* Delete Modal Styles */
         .confirm-modal-overlay {
             position: fixed;
@@ -407,16 +452,15 @@ function renderRecentDashboardOrders() {
         tr.className = "row-hover border-b border-white/[0.03]";
         
         tr.innerHTML = `
-            <td class="px-6 py-5 text-center"><span class="order-id-label">#${order.id}</span></td>
-            <td class="px-6 py-5 text-right text-[11px] text-slate-500 font-bold">${order.timestamp}</td>
-            <td class="px-6 py-5 text-right">
+            <td data-label="كود الطلب" class="px-6 py-5 text-center"><span class="order-id-label">#${order.id}</span></td>
+            <td data-label="التاريخ" class="px-6 py-5 text-right text-[11px] text-slate-500 font-bold">${order.timestamp}</td>
+            <td data-label="العميل" class="px-6 py-5 text-right">
                 <div class="text-[14px] text-white font-black leading-tight">${order.customer}</div>
                 <div class="text-[11px] text-primary font-bold mt-1.5 flex items-center justify-end gap-1">
                     <span>${order.phone}</span>
-                    <span class="material-symbols-outlined text-[14px]">call</span>
                 </div>
             </td>
-            <td class="px-6 py-5 text-right">
+            <td data-label="الطلب" class="px-6 py-5 text-right">
                 <div class="product-container">
                     <div class="product-title">${order.content}</div>
                     <div class="tag-group">
@@ -425,10 +469,10 @@ function renderRecentDashboardOrders() {
                     </div>
                 </div>
             </td>
-            <td class="px-6 py-5 text-center">
+            <td data-label="الإجمالي" class="px-6 py-5 text-center">
                 <div class="text-[14px] text-white font-black">${order.total} <span class="text-[9px] font-bold text-slate-500 ml-0.5">ج.م</span></div>
             </td>
-            <td class="px-6 py-5 text-center">
+            <td data-label="الحالة" class="px-6 py-5 text-center">
                 <div class="status-pill" style="color: ${st.color}; background: ${st.bg}; border-color: ${st.color}20">
                     <span class="material-symbols-outlined text-[14px]">${st.icon}</span>
                     <span>${st.text}</span>
@@ -470,17 +514,16 @@ function renderFullDetailedTable() {
         const tr = document.createElement('tr');
         tr.className = "row-hover border-b border-white/[0.03]";
         tr.innerHTML = `
-            <td class="px-6 py-6 text-center"><span class="order-id-label">#${order.id}</span></td>
-            <td class="px-6 py-6 text-right text-[11px] text-slate-500 font-bold">${order.timestamp}</td>
-            <td class="px-6 py-6 text-right">
+            <td data-label="كود الطلب" class="px-6 py-6 text-center"><span class="order-id-label">#${order.id}</span></td>
+            <td data-label="التاريخ" class="px-6 py-6 text-right text-[11px] text-slate-500 font-bold">${order.timestamp}</td>
+            <td data-label="العميل" class="px-6 py-6 text-right">
                 <div class="text-sm text-white font-black mb-1">${order.customer}</div>
                 <div class="text-[12px] text-primary font-black flex items-center justify-end gap-1">
                     <span>${order.phone}</span>
-                    <span class="material-symbols-outlined text-[14px]">call</span>
                 </div>
             </td>
-            <td class="px-6 py-6 text-right text-[12px] text-slate-400 max-w-[220px] leading-relaxed font-bold">${order.address}</td>
-            <td class="px-6 py-6 text-right">
+            <td data-label="العنوان" class="px-6 py-6 text-right text-[12px] text-slate-400 max-w-[220px] leading-relaxed font-bold">${order.address}</td>
+            <td data-label="الطلب" class="px-6 py-6 text-right">
                 <div class="product-container">
                     <div class="product-title">${order.content}</div>
                     <div class="tag-group">
@@ -489,13 +532,13 @@ function renderFullDetailedTable() {
                     </div>
                 </div>
             </td>
-            <td class="px-6 py-6 text-center">
+            <td data-label="الإجمالي" class="px-6 py-6 text-center">
                 <div class="text-[15px] text-white font-black">${order.total} <small class="text-[10px] text-slate-500 font-bold ml-0.5">ج.م</small></div>
             </td>
-            <td class="px-6 py-6 text-center">
+            <td data-label="الدفع" class="px-6 py-6 text-center">
                 <div class="text-[11px] text-slate-300 font-black px-3 py-1 bg-slate-800/50 rounded-lg inline-block">${order.payment}</div>
             </td>
-            <td class="px-6 py-6 text-center">
+            <td data-label="الحالة" class="px-6 py-6 text-center">
                 <div class="status-pill" style="color: ${st.color}; background: ${st.bg}; border-color: ${st.color}20">
                     <span class="material-symbols-outlined text-[15px]">${st.icon}</span>
                     <span>${st.text}</span>
