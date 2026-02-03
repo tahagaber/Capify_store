@@ -87,49 +87,83 @@ document.addEventListener('DOMContentLoaded', () => {
             font-family: 'JetBrains Mono', 'Inter', monospace;
         }
 
-        /* Responsive Table Adjustments */
+        /* Premium Mobile UI Updates */
         @media (max-width: 768px) {
             .hide-on-mobile { display: none !important; }
-            .mobile-stack { flex-direction: column !important; align-items: flex-end !important; }
-            .product-container { max-width: 100% !important; }
             
-            /* Responsive Grid for Recent Orders on Dashboard */
             #recentOrdersBody tr, #fullOrdersTableBody tr {
                 display: flex;
                 flex-direction: column;
-                padding: 1.5rem;
+                padding: 1rem;
                 gap: 12px;
-                background: rgba(30, 41, 59, 0.4);
-                margin-bottom: 1rem;
-                border-radius: 1.5rem;
+                background: #0f172a;
+                margin: 0 -0.25rem 0.5rem -0.25rem;
+                border-radius: 1rem;
                 border: 1px solid rgba(255, 255, 255, 0.05);
+                width: calc(100% + 0.5rem) !important;
+                position: relative;
             }
             #recentOrdersBody td, #fullOrdersTableBody td {
                 display: flex;
+                flex-direction: row-reverse;
                 justify-content: space-between;
                 align-items: center;
-                padding: 0 !important;
+                padding: 4px 0 !important;
                 border: none !important;
                 width: 100% !important;
-                text-align: right !important;
             }
             #recentOrdersBody td::before, #fullOrdersTableBody td::before {
                 content: attr(data-label);
                 font-size: 10px;
                 font-weight: 800;
-                color: #64748b;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-            }
-            #recentOrdersBody td:last-child, #fullOrdersTableBody td:last-child {
-                justify-content: flex-start;
-                margin-top: 8px;
-                padding-top: 12px !important;
-                border-top: 1px dashed rgba(255,255,255,0.1) !important;
+                color: #475569;
+                text-align: right;
+                min-width: 75px;
             }
             
-            /* Hide the actual head on mobile */
+            #recentOrdersBody td > div, #fullOrdersTableBody td > div {
+                text-align: left !important;
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            /* Content specific styling */
+            .order-id-label { padding: 2px 8px; font-size: 10px; }
+            .product-title { font-size: 12px !important; text-align: left !important; line-height: 1.4; }
+            .status-pill { font-size: 10px !important; padding: 4px 10px; }
+
+            /* Grid of Action Buttons */
+            #recentOrdersBody td:last-child, #fullOrdersTableBody td:last-child {
+                margin-top: 8px;
+                padding-top: 12px !important;
+                border-top: 1px solid rgba(255,255,255,0.05) !important;
+            }
+            #recentOrdersBody td:last-child .flex, #fullOrdersTableBody td:last-child .flex {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                width: 100%;
+                gap: 8px;
+            }
+            #recentOrdersBody td:last-child button, #fullOrdersTableBody td:last-child button {
+                width: 100% !important;
+                height: 48px !important;
+                border-radius: 14px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                padding: 0 !important;
+                text-align: center !important;
+            }
+            #recentOrdersBody td:last-child button span, #fullOrdersTableBody td:last-child button span {
+                margin: 0 !important;
+                padding: 0 !important;
+                display: block !important;
+            }
+            
             thead.hide-on-mobile { display: none; }
+            .grid { grid-template-columns: 1fr !important; gap: 0.75rem !important; }
         }
          /* Delete Modal Styles */
         .confirm-modal-overlay {

@@ -37,8 +37,7 @@
     <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[45] hidden transition-opacity duration-300 opacity-0"></div>
 
     <!-- Unified Sidebar -->
-    <!-- Unified Sidebar -->
-    <aside id="mainSidebar" class="fixed inset-y-0 left-0 w-72 flex flex-col bg-[#0b1120] border-r border-slate-800/60 h-screen z-50 transition-transform duration-300 lg:translate-x-0">
+    <aside id="mainSidebar" class="fixed inset-y-0 left-0 w-72 flex flex-col bg-[#0b1120] border-r border-slate-800/60 h-screen z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
         <div class="p-8 flex items-center justify-between gap-4">
             <div class="flex items-center gap-4">
                 <img src="WhatsApp Image 2026-02-02 at 9.33.37 PM.jpeg" alt="Capify Logo" class="size-12 object-contain rounded-xl shadow-lg shadow-primary/20">
@@ -78,28 +77,23 @@
     <!-- Main Content -->
     <div id="mainContent" class="flex-1 flex flex-col h-screen overflow-y-auto bg-background-dark transition-all duration-300 lg:pl-72">
         <header class="h-20 flex items-center justify-between px-6 lg:px-10 border-b border-slate-800/60 bg-background-dark/80 backdrop-blur-xl sticky top-0 z-40">
-            <div class="flex items-center gap-4 lg:hidden">
-                <button onclick="toggleSidebar()" class="p-2.5 rounded-xl bg-slate-800/50 text-white">
-                    <span class="material-symbols-outlined">menu</span>
-                </button>
-                <img src="WhatsApp Image 2026-02-02 at 9.33.37 PM.jpeg" alt="Logo" class="size-10 object-contain rounded-lg">
-            </div>
             <div class="flex items-center gap-4">
                 <button onclick="toggleSidebar()" class="p-2.5 rounded-xl bg-slate-800/50 text-white hover:bg-primary transition-all">
                     <span class="material-symbols-outlined">menu</span>
                 </button>
-                <h2 class="hidden lg:block text-lg font-bold">Sales & Orders Management</h2>
+                <img src="WhatsApp Image 2026-02-02 at 9.33.37 PM.jpeg" alt="Logo" class="size-10 object-contain rounded-lg lg:hidden">
+                <h2 class="hidden lg:block text-lg font-bold tracking-tight">Orders Management</h2>
             </div>
             <div class="flex items-center gap-6">
-                <button onclick="openModal()" class="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-white text-sm font-black hover:bg-blue-600 transition-all shadow-xl shadow-primary/20 active:scale-95">
-                    <span class="material-symbols-outlined text-[20px]">add</span>
-                    <span class="hidden sm:inline">Create Order</span>
-                    <span class="sm:hidden">New</span>
+                <button onclick="openModal()" class="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:2xl bg-primary text-white text-xs sm:text-sm font-black hover:bg-blue-600 transition-all shadow-xl shadow-primary/20 active:scale-95">
+                    <span class="material-symbols-outlined text-[18px] sm:text-[20px]">add</span>
+                    <span class="hidden xs:inline">Create Order</span>
+                    <span class="xs:hidden">New</span>
                 </button>
             </div>
         </header>
 
-        <main class="p-6 lg:p-10 space-y-8 w-full">
+        <main class="p-3 sm:p-6 lg:p-10 space-y-8 w-full">
             <div class="flex flex-col gap-6">
                 <!-- Search & Filters Row -->
                 <div class="flex flex-wrap items-center gap-4 lg:gap-6">
@@ -267,24 +261,24 @@
             const sidebar = document.getElementById('mainSidebar');
             const content = document.getElementById('mainContent');
             const overlay = document.getElementById('sidebarOverlay');
-            const isMobile = window.innerWidth < 1024;
+            const isDesktop = window.innerWidth >= 1024;
             
-            if (isMobile) {
-                const isOpening = sidebar.classList.contains('-translate-x-full');
-                if (isOpening) {
-                    overlay.classList.remove('hidden');
-                    sidebar.classList.remove('-translate-x-full');
-                    setTimeout(() => overlay.classList.replace('opacity-0', 'opacity-100'), 10);
-                } else {
-                    overlay.classList.replace('opacity-100', 'opacity-0');
-                    sidebar.classList.add('-translate-x-full');
-                    setTimeout(() => overlay.classList.add('hidden'), 300);
-                }
-            } else {
+            if (isDesktop) {
                 sidebar.classList.toggle('lg:translate-x-0');
                 sidebar.classList.toggle('lg:-translate-x-full');
                 content.classList.toggle('lg:pl-72');
                 content.classList.toggle('lg:pl-0');
+            } else {
+                const isHidden = sidebar.classList.contains('-translate-x-full');
+                if (isHidden) {
+                    sidebar.classList.remove('-translate-x-full');
+                    overlay.classList.remove('hidden');
+                    setTimeout(() => overlay.classList.replace('opacity-0', 'opacity-100'), 10);
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.replace('opacity-100', 'opacity-0');
+                    setTimeout(() => overlay.classList.add('hidden'), 300);
+                }
             }
         }
     </script>
