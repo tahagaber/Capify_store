@@ -1,5 +1,5 @@
 // Capify store Enterprise Logic - Modern Professional Edition
-const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbwVurWjK9VkeoCeOyvF9KrYQRvvompofT0O-JlCjdnl9DFhTG1pDyR5yuz28CQF0Agh/exec';
+const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxubLQPa6zugSudtYmvdo46BPaK-p8Mby3HezY2SfQ6musWegOqKnvUOu2giGRuUD7Y/exec';
 
 let allDetailedOrders = [];
 let lastSyncTime = 0;
@@ -38,10 +38,108 @@ document.addEventListener('DOMContentLoaded', () => {
             animation: loading 1.5s infinite;
         }
         @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        .product-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 280px;
+        }
+        .product-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: #f8fafc;
+            line-height: 1.5;
+            letter-spacing: -0.01em;
+            word-break: break-word;
+        }
+        .tag-group {
+            display: flex;
+            flex-direction: row-reverse;
+            gap: 6px;
+            align-items: center;
+        }
+        .size-badge {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 2px 10px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+        .qty-badge {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 2px 10px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 900;
+        }
+        .order-id-label {
+            background: #1e293b;
+            color: #3b82f6;
+            padding: 4px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(59, 130, 246, 0.1);
+            font-family: 'JetBrains Mono', 'Inter', monospace;
+        }
+         /* Delete Modal Styles */
+        .confirm-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(11, 17, 32, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .confirm-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .confirm-modal-content {
+            background: #1e293b;
+            border: 1px solid rgba(244, 63, 94, 0.2);
+            width: 100%;
+            max-width: 400px;
+            border-radius: 2rem;
+            padding: 2.5rem;
+            text-align: center;
+            transform: scale(0.9);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .active .confirm-modal-content {
+            transform: scale(1);
+        }
     `;
     document.head.appendChild(style);
 
-    // 1. Instant Load from Cache
+    // Inject Delete Confirmation Modal
+    const modalHtml = `
+        <div id="deleteConfirmModal" class="confirm-modal-overlay">
+            <div class="confirm-modal-content">
+                <div class="size-20 bg-rose-500/10 text-rose-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                    <span class="material-symbols-outlined text-4xl">delete_forever</span>
+                </div>
+                <h3 class="text-xl font-black text-white mb-2">تأكيد حذف الطلب؟</h3>
+                <p class="text-slate-400 text-sm font-bold mb-8">هل أنت متأكد من رغبتك في حذف هذا الطلب؟ لا يمكن التراجع عن هذا الإجراء وسيتم حذفه من السيستم والشيت.</p>
+                <div class="flex gap-3">
+                    <button onclick="closeDeleteModal()" class="flex-1 py-4 px-6 bg-slate-800 text-slate-300 font-black rounded-2xl hover:bg-slate-700 transition-all">إلغاء</button>
+                    <button id="confirmDeleteBtn" class="flex-1 py-4 px-6 bg-rose-600 text-white font-black rounded-2xl hover:bg-rose-700 shadow-xl shadow-rose-600/20 transition-all">نعم، احذف الآن</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+     // 1. Instant Load from Cache
     loadDataFromCache();
     
     // 2. Refresh in Background
@@ -158,14 +256,9 @@ async function fetchOrdersData(isSilent = false) {
             orderMap.set(cleanId, row); // Overwrites older versions, keeps latest sheet position
         });
 
-        // 2. SORTING: Ensure newest (by date) is always at the TOP
-        allDetailedOrders = Array.from(orderMap.values()).sort((a, b) => {
-            const dateA = new Date(a.timestamp);
-            const dateB = new Date(b.timestamp);
-            return dateB - dateA; // Newest first
-        });
-
-        localStorage.setItem('capify_store_orders_cache', JSON.stringify(allDetailedOrders));
+        // 2. PRESERVE SHEET ORDER: Use the order exactly as it appears in the Google Sheet (1, 2, 3...)
+        allDetailedOrders = Array.from(orderMap.values());
+         localStorage.setItem('capify_store_orders_cache', JSON.stringify(allDetailedOrders));
         
         renderFullDetailedTable();
         renderRecentDashboardOrders();
@@ -307,23 +400,29 @@ function renderRecentDashboardOrders() {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    allDetailedOrders.slice(0, 5).forEach(order => {
+    // Show last 5 entries from sheet, with newest at the top
+    allDetailedOrders.slice(-5).reverse().forEach(order => {
         const st = getStatusInfo(order.status);
         const tr = document.createElement('tr');
         tr.className = "row-hover border-b border-white/[0.03]";
         
         tr.innerHTML = `
-            <td class="px-6 py-5 text-center font-mono font-bold text-[11px] text-primary">#${order.id}</td>
-            <td class="px-6 py-5 text-right text-[11px] text-slate-500 font-medium">${order.timestamp}</td>
+            <td class="px-6 py-5 text-center"><span class="order-id-label">#${order.id}</span></td>
+            <td class="px-6 py-5 text-right text-[11px] text-slate-500 font-bold">${order.timestamp}</td>
             <td class="px-6 py-5 text-right">
-                <div class="text-[13px] text-white font-bold leading-none">${order.customer}</div>
-                <div class="text-[10px] text-slate-500 font-bold mt-1">${order.phone}</div>
+                <div class="text-[14px] text-white font-black leading-tight">${order.customer}</div>
+                <div class="text-[11px] text-primary font-bold mt-1.5 flex items-center justify-end gap-1">
+                    <span>${order.phone}</span>
+                    <span class="material-symbols-outlined text-[14px]">call</span>
+                </div>
             </td>
             <td class="px-6 py-5 text-right">
-                <div class="text-[13px] text-white font-bold">${order.content}</div>
-                <div class="flex flex-row-reverse gap-1 mt-1">
-                    <span class="product-tag">${order.size}</span>
-                    <span class="product-tag">×${order.qty}</span>
+                <div class="product-container">
+                    <div class="product-title">${order.content}</div>
+                    <div class="tag-group">
+                        <span class="size-badge">${order.size}</span>
+                        <span class="qty-badge">${order.qty} قطع</span>
+                    </div>
                 </div>
             </td>
             <td class="px-6 py-5 text-center">
@@ -342,6 +441,9 @@ function renderRecentDashboardOrders() {
                     </button>
                     <button onclick="openEditModal('${order.id}')" class="size-9 bg-slate-800 text-slate-400 rounded-xl hover:text-white hover:bg-primary transition-all flex items-center justify-center">
                         <span class="material-symbols-outlined text-[18px]">edit</span>
+                    </button>
+                    <button onclick="confirmDelete('${order.id}')" class="size-9 bg-rose-500/10 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[18px]">delete</span>
                     </button>
                 </div>
             </td>
@@ -368,18 +470,23 @@ function renderFullDetailedTable() {
         const tr = document.createElement('tr');
         tr.className = "row-hover border-b border-white/[0.03]";
         tr.innerHTML = `
-            <td class="px-6 py-6 text-center font-mono font-bold text-xs text-primary">#${order.id}</td>
-            <td class="px-6 py-6 text-right text-[11px] text-slate-500 font-medium">${order.timestamp}</td>
+            <td class="px-6 py-6 text-center"><span class="order-id-label">#${order.id}</span></td>
+            <td class="px-6 py-6 text-right text-[11px] text-slate-500 font-bold">${order.timestamp}</td>
             <td class="px-6 py-6 text-right">
-                <div class="text-sm text-white font-bold">${order.customer}</div>
-                <div class="text-[11px] text-primary font-bold mt-1">${order.phone}</div>
+                <div class="text-sm text-white font-black mb-1">${order.customer}</div>
+                <div class="text-[12px] text-primary font-black flex items-center justify-end gap-1">
+                    <span>${order.phone}</span>
+                    <span class="material-symbols-outlined text-[14px]">call</span>
+                </div>
             </td>
-            <td class="px-6 py-6 text-right text-[11px] text-slate-400 max-w-[200px] truncate leading-relaxed">${order.address}</td>
+            <td class="px-6 py-6 text-right text-[12px] text-slate-400 max-w-[220px] leading-relaxed font-bold">${order.address}</td>
             <td class="px-6 py-6 text-right">
-                <div class="text-sm text-white font-bold">${order.content}</div>
-                <div class="flex flex-row-reverse gap-1.5 mt-1.5">
-                    <span class="product-tag">${order.size || 'N/A'}</span>
-                    <span class="product-tag">الكمية: ${order.qty}</span>
+                <div class="product-container">
+                    <div class="product-title">${order.content}</div>
+                    <div class="tag-group">
+                        <span class="size-badge">${order.size || 'N/A'}</span>
+                        <span class="qty-badge">عدد: ${order.qty}</span>
+                    </div>
                 </div>
             </td>
             <td class="px-6 py-6 text-center">
@@ -398,6 +505,7 @@ function renderFullDetailedTable() {
                 <div class="flex items-center gap-2">
                     <button onclick="openWhatsApp('${order.phone}')" class="size-10 bg-emerald-500/10 text-emerald-500 rounded-xl hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center"><span class="material-symbols-outlined text-[20px]">chat</span></button>
                     <button onclick="openEditModal('${order.id}')" class="size-10 bg-slate-800 text-slate-400 rounded-xl hover:text-white hover:bg-primary transition-all flex items-center justify-center"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+                    <button onclick="confirmDelete('${order.id}')" class="size-10 bg-rose-500/10 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center"><span class="material-symbols-outlined text-[20px]">delete</span></button>
                 </div>
             </td>
         `;
@@ -519,8 +627,9 @@ document.getElementById('orderForm')?.addEventListener('submit', async (e) => {
     const rawId = fd.get('orderId');
     const isEdit = !!rawId && rawId !== 'N/A' && rawId !== '';
     
-    // Generate ID if it's a new order, otherwise use the existing one
-    const cleanId = isEdit ? rawId.toString().replace('#', '').trim() : Math.floor(1000 + Math.random() * 9000).toString();
+    // Generate Sequential ID based on current list length (Server will confirm)
+    const nextId = (allDetailedOrders.length + 1).toString();
+    const cleanId = isEdit ? rawId.toString().replace('#', '').trim() : nextId;
     
     const orderData = {
         id: cleanId,
@@ -537,13 +646,24 @@ document.getElementById('orderForm')?.addEventListener('submit', async (e) => {
         action: isEdit ? 'updateOrder' : 'addOrder'
     };
 
-    // 1. Instant UI Replace (Delete Old version from local state)
+    // 1. SMART UI UPDATE (In-place update)
     if (isEdit) {
-        // Force removal of ANY record with this ID to prevent UI ghosting
-        allDetailedOrders = allDetailedOrders.filter(x => x.id.toString() !== cleanId);
+        // Find existing index
+        const idx = allDetailedOrders.findIndex(x => x.id.toString() === cleanId.toString());
+        if (idx !== -1) {
+            // Update in place
+            allDetailedOrders[idx] = orderData;
+        } else {
+            // Fallback if not found for some reason
+            allDetailedOrders.unshift(orderData);
+        }
+    } else {
+        // New Order: Add to the end to match Sheet's appendRow behavior
+        allDetailedOrders.push(orderData);
     }
-    // Always add as the latest version to top
-    allDetailedOrders.unshift(orderData);
+    
+    // CRITICAL: Update Cache immediately so refresh doesn't lose data
+    localStorage.setItem('capify_store_orders_cache', JSON.stringify(allDetailedOrders));
     
     renderFullDetailedTable();
     renderRecentDashboardOrders();
@@ -606,5 +726,50 @@ function openEditModal(id) {
         openModal();
     } catch (err) {
         console.error('Error opening edit modal:', err);
+    }
+}
+
+let orderIdToDelete = null;
+
+function confirmDelete(id) {
+    orderIdToDelete = id;
+    const modal = document.getElementById('deleteConfirmModal');
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    document.getElementById('confirmDeleteBtn').onclick = () => deleteOrder(id);
+}
+
+function closeDeleteModal() {
+    const modal = document.getElementById('deleteConfirmModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+    orderIdToDelete = null;
+}
+
+async function deleteOrder(id) {
+    // 1. Instant UI Update
+    allDetailedOrders = allDetailedOrders.filter(o => o.id.toString() !== id.toString());
+    localStorage.setItem('capify_store_orders_cache', JSON.stringify(allDetailedOrders));
+    
+    renderFullDetailedTable();
+    renderRecentDashboardOrders();
+    updateDashboardStats();
+    updateChartsData();
+    closeDeleteModal();
+
+    // 2. Background sync to Sheet
+    try {
+        const params = new URLSearchParams();
+        params.append('action', 'deleteOrder');
+        params.append('id', id);
+        
+        fetch(`${SHEET_API_URL}?${params.toString()}`, { mode: 'no-cors' });
+        console.log(`Order #${id} deletion sent to sheet`);
+        
+        // Force a BACKGROUND resync because IDs have changed in the sheet
+        setTimeout(() => fetchOrdersData(true), 2000);
+    } catch (e) {
+        console.error('Delete sync error:', e);
     }
 }
