@@ -335,9 +335,13 @@ async function fetchOrdersData(isSilent = false) {
             orderMap.set(cleanId, row); // Overwrites older versions, keeps latest sheet position
         });
 
-        // 2. PRESERVE SHEET ORDER: Use the order exactly as it appears in the Google Sheet (1, 2, 3...)
-        allDetailedOrders = Array.from(orderMap.values());
-         localStorage.setItem('capify_store_orders_cache', JSON.stringify(allDetailedOrders));
+        // 2. PRESERVE SHEET ORDER & ENFORCE SEQUENTIAL IDs (1, 2, 3...)
+        allDetailedOrders = Array.from(orderMap.values()).map((order, index) => {
+            order.id = (index + 1).toString();
+            return order;
+        });
+        
+        localStorage.setItem('capify_store_orders_cache', JSON.stringify(allDetailedOrders));
         
         renderFullDetailedTable();
         renderRecentDashboardOrders();
